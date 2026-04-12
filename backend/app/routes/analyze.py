@@ -1,5 +1,10 @@
 import os
-from fastapi import APIRouter
+import stat
+import shutil
+import subprocess
+from fastapi import APIRouter, Body
+from fastapi import HTTPException
+from pydantic import BaseModel
 
 from app.utils.diagram_html import generate_html
 from app.parsers.python_parser import parse_python_project
@@ -20,39 +25,94 @@ router = APIRouter()
 # Base directory (project root)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 
-@router.post("/analyze")
-def analyze(path: str, docker_path: str):
 
-    # Convert to absolute paths
-    full_path = os.path.join(BASE_DIR, path)
-    full_docker_path = os.path.join(BASE_DIR, docker_path)
+# Define request model for frontend compatibility
+class AnalyzeRequest(BaseModel):
+    github_url: str
+    docker_path: str = None
+
+
+@router.post("/analyze")
+def analyze(request: AnalyzeRequest):
+    github_url = request.github_url
+    docker_path = request.docker_path
+
+    # Clone repo if github_url is a link
+    if github_url.startswith("http://") or github_url.startswith("https://"):
+        repo_name = github_url.rstrip(".git").split("/")[-1]
+        clone_dir = os.path.join(BASE_DIR, "data", "cloned_repos", repo_name)
+
+        def on_rm_error(func, path, exc_info):
+            # Change the file to be writable and try again
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+
+        if os.path.exists(clone_dir):
+            shutil.rmtree(clone_dir, onerror=on_rm_error)
+        try:
+            subprocess.run(["git", "clone", github_url, clone_dir], check=True)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to clone repo: {e}")
+        path = clone_dir
+        if docker_path is None:
+            docker_path = os.path.join(clone_dir, "docker-compose.yml")
+        elif not os.path.isabs(docker_path):
+            docker_path = os.path.join(clone_dir, docker_path)
+    elif github_url.endswith("sample_project"):
+        path = os.path.join("data", "sample_project")
+        if docker_path is None:
+            docker_path = os.path.join(path, "docker-compose.yml")
+        elif not os.path.isabs(docker_path):
+            docker_path = os.path.join(path, docker_path)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid github_url or not supported.")
+
+    full_path = os.path.abspath(path)
+    full_docker_path = os.path.abspath(docker_path)
 
     print("Project path:", full_path)
     print("Docker path:", full_docker_path)
 
-    # Parsing
-    modules, edges = parse_python_project(full_path)
-    services = parse_docker_compose(full_docker_path)
+    # Check if main script exists for runtime tracing
+    main_script = None
+    for candidate in ["app.py", "main.py"]:
+        candidate_path = os.path.join(full_path, candidate)
+        if os.path.isfile(candidate_path):
+            main_script = candidate_path
+            break
 
-    # Graph building
-    mapping = map_services_to_code(services, modules)
+    # Parsing
+
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=400, detail=f"Project path not found: {full_path}")
+
+    modules, edges = parse_python_project(full_path)
+
+    # If docker-compose.yml exists, parse services, else use empty
+    if os.path.exists(full_docker_path):
+        services = parse_docker_compose(full_docker_path)
+        mapping = map_services_to_code(services, modules)
+    else:
+        services = {}
+        mapping = {}
+
     graph = build_full_graph(modules, edges, services, mapping)
 
-    # AI Analysis
     description = generate_architecture_description(graph)
     risks = detect_risks(graph)
-
-    # Diagram
     mermaid = generate_mermaid(graph)
     enhanced = enhance_diagram(mermaid)
 
-    # Runtime tracing
-    trace = run_script("data/sample_project/app.py")
-    runtime_graph = build_runtime_graph(trace)
-
-    # Comparison + insights
-    comparison = compare_graphs(graph, runtime_graph)
-    insights = generate_insights(graph, runtime_graph, risks)
+    # Runtime tracing (optional)
+    if main_script:
+        trace = run_script(main_script)
+        runtime_graph = build_runtime_graph(trace)
+        comparison = compare_graphs(graph, runtime_graph)
+        insights = generate_insights(graph, runtime_graph, risks)
+    else:
+        runtime_graph = None
+        comparison = None
+        insights = None
 
     return {
         "modules": modules,
