@@ -8,7 +8,14 @@ const Results = () => {
   const { result, loading, runAnalysis } = useAnalyze();
 
   useEffect(() => {
-    runAnalysis(state);
+    console.log("STATE:", state);
+
+    const payload = state || {
+      github_url: "https://github.com/your-test-repo",
+      docker_path: "docker-compose.yml",
+    };
+
+    runAnalysis(payload);
   }, []);
 
   if (loading) return <p className="text-white">Loading...</p>;
@@ -19,15 +26,20 @@ const Results = () => {
     <div className="p-6 bg-black text-white min-h-screen">
       <h1 className="text-2xl mb-4">Architecture Diagram</h1>
 
-      <MermaidRenderer chart={result.diagram} />
+      {/* ✅ FIXED */}
+      <MermaidRenderer chart={result.diagram_ai} />
 
       <div className="mt-6">
         <h2 className="text-xl">Analysis</h2>
-        <p>{result.analysis.summary}</p>
+
+        {/* ✅ FIXED */}
+        <p>{result.description}</p>
 
         <h3 className="mt-4">Risks</h3>
+
+        {/* ✅ FIXED */}
         <ul>
-          {result.analysis.risks.map((r, i) => (
+          {result.risks?.map((r, i) => (
             <li key={i}>⚠️ {r}</li>
           ))}
         </ul>

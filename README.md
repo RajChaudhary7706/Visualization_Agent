@@ -1,7 +1,55 @@
+
 # Visualization Agent
 
+**Latest Features:**
+- Analyze any public GitHub Python repo by URL (no manual download needed)
+- `docker-compose.yml` is now optional—analyze repos even if they don't have Docker Compose
+- Improved error handling and Windows compatibility for repo deletion
+- CORS is enabled by default for local frontend-backend development
+
+
 ## Project Overview
-Visualization Agent is an AI-powered tool for analyzing and visualizing Python project architectures. It parses code and Docker Compose files, traces runtime execution, builds dependency graphs, and uses OpenAI GPT-4o-mini to generate architecture descriptions, risk analysis, and insights. It outputs Mermaid diagrams and HTML visualizations.
+Visualization Agent is an AI-powered platform for analyzing and visualizing Python project architectures. It parses code and Docker Compose files, traces runtime execution, builds dependency graphs, and uses OpenAI GPT-4o-mini to generate architecture descriptions, risk analysis, and insights. It outputs Mermaid diagrams and HTML visualizations, all accessible through a modern React frontend.
+---
+
+## Project Structure
+
+- `backend/` — FastAPI backend for code analysis, AI agents, and diagram generation
+- `frontend/` — React + Vite frontend for user interaction and visualization
+- `data/` — Sample projects and test data
+---
+
+## Quick Start
+
+### 1. Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate  # On Windows
+pip install -r ../requirements.txt
+uvicorn app.main:app --reload
+```
+
+### 2. Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at [http://localhost:5173](http://localhost:5173) and expects the backend running at [http://localhost:8000](http://localhost:8000) by default.
+
+---
+
+## How to Use
+
+1. Open the frontend in your browser.
+2. Enter the GitHub repository URL of a Python project and click **Analyze**.
+	- The backend will automatically clone the repo and analyze it (no need to download manually).
+	- If the repo does not have a `docker-compose.yml`, analysis will still work (services will be empty).
+3. View the generated architecture diagram, AI analysis, and risk list on the results page.
 
 ---
 
@@ -15,7 +63,18 @@ Visualization Agent is an AI-powered tool for analyzing and visualizing Python p
 
 ---
 
-## Key Modules & Responsibilities
+## Backend Modules & Responsibilities
+---
+
+## Frontend Overview
+
+The frontend is built with React 19, Vite, and Tailwind CSS. It provides:
+
+- **Project Submission:** Input form for GitHub repo URLs
+- **Visualization:** Mermaid.js diagrams
+- **AI Results:** Architecture summary, risks, and insights
+
+See `frontend/README.md` for more details.
 
 ### Parsers (`backend/app/parsers/`)
 - `python_parser.py`: Extracts Python modules and their import relationships using AST.
@@ -54,37 +113,53 @@ Visualization Agent is an AI-powered tool for analyzing and visualizing Python p
 ---
 
 ## Technologies Used
-- FastAPI, Uvicorn (backend)
+
+**Backend:**
+- FastAPI, Uvicorn
 - OpenAI API (GPT-4o-mini)
 - NetworkX, Python AST, PyYAML
-- Mermaid.js (diagram rendering)
 - python-dotenv
+
+**Frontend:**
+- React 19, Vite
+- Tailwind CSS
+- Mermaid.js
+- Axios, React Router
 
 ---
 
 ## API Endpoints
-- `/analyze` (POST): Full analysis pipeline
+- `/analyze` (POST): Full analysis pipeline. Accepts `{ github_url: ... }` (and optional `docker_path`).
 - `/diagram` (POST): Diagram generation
 - `/` (GET): Health check
 
 ---
 
 ## Example: How It Works
-1. User sends project path and Docker Compose file to `/analyze`.
-2. The backend parses code and Docker Compose, builds graphs, and runs AI agents.
+1. User sends a GitHub repo URL (and optionally a Docker Compose path) to `/analyze`.
+2. The backend clones the repo, parses code and Docker Compose (if present), builds graphs, and runs AI agents.
 3. Returns architecture description, risks, diagrams, and insights.
 
 ---
 
-## Requirements
-```
-fastapi
-uvicorn
-openai
-networkx
-pyyaml
-python-dotenv
-```
+## Backend Requirements
+See `requirements.txt` for the full list. Main packages:
+
+- fastapi
+- uvicorn
+- openai
+- networkx
+- pyyaml
+- python-dotenv
+
+## Frontend Requirements
+See `frontend/package.json` for the full list. Main packages:
+
+- react
+- vite
+- tailwindcss
+- mermaid
+- axios
 
 ---
 
@@ -216,6 +291,8 @@ Instead of just metrics, the system uses LLMs to generate human-readable explana
 
 ### 4. Visualization
 Outputs both raw and AI-enhanced Mermaid diagrams, and can generate HTML for easy sharing and presentation.
+
+---
 
 ---
 
