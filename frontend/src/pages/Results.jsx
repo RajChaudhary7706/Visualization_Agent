@@ -10,38 +10,54 @@ const Results = () => {
   useEffect(() => {
     console.log("STATE:", state);
 
-    const payload = state || {
-      github_url: "https://github.com/your-test-repo",
-      docker_path: "docker-compose.yml",
-    };
+    // ✅ ONLY run if valid data exists
+    if (!state || !state.github_url) {
+      console.warn("❌ No valid GitHub URL provided");
+      return;
+    }
 
-    runAnalysis(payload);
-  }, []);
+    runAnalysis(state);
 
-  if (loading) return <p className="text-white">Loading...</p>;
+  }, [state]);
 
-  if (!result) return null;
+  // ✅ Loading state
+  if (loading) {
+    return <p className="text-white p-6">Analyzing project...</p>;
+  }
+
+  // ✅ No result fallback
+  if (!result) {
+    return <p className="text-white p-6">No data available</p>;
+  }
 
   return (
     <div className="p-6 bg-black text-white min-h-screen">
       <h1 className="text-2xl mb-4">Architecture Diagram</h1>
 
-      {/* ✅ FIXED */}
-      <MermaidRenderer chart={result.diagram_ai} />
+      {/* ✅ Safe rendering */}
+      {result.diagram_ai ? (
+        <MermaidRenderer chart={result.diagram_ai} />
+      ) : (
+        <p>No diagram available</p>
+      )}
 
       <div className="mt-6">
         <h2 className="text-xl">Analysis</h2>
 
-        {/* ✅ FIXED */}
-        <p>{result.description}</p>
+        {/* ✅ Safe description */}
+        <p>{result.description || "No description available"}</p>
 
         <h3 className="mt-4">Risks</h3>
 
-        {/* ✅ FIXED */}
+        {/* ✅ Safe risks */}
         <ul>
-          {result.risks?.map((r, i) => (
-            <li key={i}>⚠️ {r}</li>
-          ))}
+          {result.risks && result.risks.length > 0 ? (
+            result.risks.map((r, i) => (
+              <li key={i}>⚠️ {r}</li>
+            ))
+          ) : (
+            <li>No risks detected</li>
+          )}
         </ul>
       </div>
     </div>

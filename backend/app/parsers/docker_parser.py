@@ -21,7 +21,10 @@ def parse_docker_compose(file_path):
             "build": config.get("build"),
             "ports": config.get("ports", []),
             "depends_on": config.get("depends_on", []),
-            "environment": config.get("environment", {})
+            "environment": config.get("environment", {}),
+            "networks": config.get("networks", []), 
+            "volumes": config.get("volumes", []),  
+            "labels": config.get("labels", {})
         }
 
     return services

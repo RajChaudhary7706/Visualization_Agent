@@ -6,9 +6,9 @@ export const useAnalyze = () => {
   const [loading, setLoading] = useState(false);
 
   const runAnalysis = async (data) => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
       const response = await axios.post(
         "http://localhost:8000/analyze",
         data,
@@ -19,11 +19,18 @@ export const useAnalyze = () => {
         }
       );
 
-      console.log("API RESPONSE:", response.data);
+      console.log("✅ API SUCCESS:", response.data);
 
       setResult(response.data);
+
     } catch (error) {
-      console.error("Error analyzing project:", error);
+      // 🔥 SHOW REAL BACKEND ERROR
+      if (error.response) {
+        console.error("❌ BACKEND ERROR:", error.response.data);
+      } else {
+        console.error("❌ NETWORK ERROR:", error.message);
+      }
+
     } finally {
       setLoading(false);
     }
