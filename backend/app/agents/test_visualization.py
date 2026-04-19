@@ -458,6 +458,103 @@ def test_large_graph_handling():
     # Should not crash
     summary = detector._generate_summary()
     assert summary['health_score'] >= 0
+    
+def test_extract_code_structures_python():
+    """Test Python code structure extraction."""
+    from app.services.code_structure_extractor import extract_code_structures
+
+    temp_dir = TEST_TMP_DIR / "structure_python_case"
+
+    try:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        sample_file = temp_dir / "sample.py"
+        sample_file.write_text(
+            """
+class UserService:
+    def get_user(self):
+        return 1
+
+def helper():
+    return True
+
+async def load_data():
+    return []
+""",
+            encoding="utf-8",
+        )
+
+        file_map = {"sample.py": str(sample_file)}
+        structures = extract_code_structures(file_map)
+
+        assert "sample.py" in structures
+        assert "UserService" in structures["sample.py"]["classes"]
+        assert "helper" in structures["sample.py"]["functions"]
+        assert "load_data" in structures["sample.py"]["async_functions"]
+        assert "get_user" in structures["sample.py"]["methods"]
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def test_build_file_tree():
+    """Test nested file tree generation."""
+    from app.services.tree_builder import build_file_tree
+
+    modules = [
+        "src/main.py",
+        "src/services/auth.py",
+        "src/services/user.py",
+        "README.md",
+    ]
+
+    tree = build_file_tree(modules)
+
+    assert isinstance(tree, list)
+    assert any(node["name"] == "src" and node["type"] == "folder" for node in tree)
+    assert any(node["name"] == "README.md" and node["type"] == "file" for node in tree)
+
+
+def test_extract_code_structures_javascript():
+    """Test JS/TS code structure extraction."""
+    from app.services.code_structure_extractor import extract_code_structures
+
+    temp_dir = TEST_TMP_DIR / "structure_js_case"
+
+    try:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        sample_file = temp_dir / "app.js"
+        sample_file.write_text(
+            """
+export function login() {
+    return true;
+}
+
+class AuthService {
+    authenticate() {
+        return true;
+    }
+}
+
+const loadUser = () => {
+    return {};
+};
+""",
+            encoding="utf-8",
+        )
+
+        file_map = {"app.js": str(sample_file)}
+        structures = extract_code_structures(file_map)
+
+        assert "app.js" in structures
+        assert "AuthService" in structures["app.js"]["classes"]
+        assert "login" in structures["app.js"]["functions"]
+        assert "loadUser" in structures["app.js"]["arrow_functions"]
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 # ============================================================================
 # Run tests with: pytest test_visualization_agent.py -v
