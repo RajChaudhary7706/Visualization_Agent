@@ -1,72 +1,3 @@
-// import { useEffect } from "react";
-// import { useLocation } from "react-router-dom";
-// import { useAnalyze } from "../hooks/useAnalyze";
-// import MermaidRenderer from "../components/visualization/MermaidRenderer";
-
-// const Results = () => {
-//   const { state } = useLocation();
-//   const { result, loading, runAnalysis } = useAnalyze();
-
-//   useEffect(() => {
-//     console.log("STATE:", state);
-
-//     // ✅ ONLY run if valid data exists
-//     if (!state || !state.github_url) {
-//       console.warn("❌ No valid GitHub URL provided");
-//       return;
-//     }
-
-//     runAnalysis(state);
-
-//   }, [state]);
-
-//   // ✅ Loading state
-//   if (loading) {
-//     return <p className="text-white p-6">Analyzing project...</p>;
-//   }
-
-//   // ✅ No result fallback
-//   if (!result) {
-//     return <p className="text-white p-6">No data available</p>;
-//   }
-
-//   return (
-//     <div className="p-6 bg-black text-white min-h-screen">
-//       <h1 className="text-2xl mb-4">Architecture Diagram</h1>
-
-//       {/* ✅ Safe rendering */}
-//       {result.diagram_ai ? (
-//         <MermaidRenderer chart={result.diagram_ai} />
-//       ) : (
-//         <p>No diagram available</p>
-//       )}
-
-//       <div className="mt-6">
-//         <h2 className="text-xl">Analysis</h2>
-
-//         {/* ✅ Safe description */}
-//         <p>{result.description || "No description available"}</p>
-
-//         <h3 className="mt-4">Risks</h3>
-
-//         {/* ✅ Safe risks */}
-//         <ul>
-//           {result.risks && result.risks.length > 0 ? (
-//             result.risks.map((r, i) => (
-//               <li key={i}>⚠️ {r}</li>
-//             ))
-//           ) : (
-//             <li>No risks detected</li>
-//           )}
-//         </ul>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Results;
-
-
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAnalyze } from "../hooks/useAnalyze";
@@ -97,40 +28,6 @@ const TreeNode = ({ node, depth = 0 }) => {
   );
 };
 
-const StructureCard = ({ fileName, structure }) => {
-  const renderList = (label, items) => (
-    <div className="mb-3">
-      <h4 className="text-sm font-semibold text-cyan-300">{label}</h4>
-      {items && items.length > 0 ? (
-        <ul className="list-disc list-inside text-gray-300">
-          {items.map((item, index) => (
-            <li key={`${label}-${item}-${index}`}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500 text-sm">None</p>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
-      <h3 className="text-lg font-semibold text-white mb-2">{fileName}</h3>
-      <p className="text-sm text-gray-400 mb-4">
-        Language: {structure.language || "unknown"}
-      </p>
-
-      {renderList("Classes", structure.classes || [])}
-      {renderList("Functions", structure.functions || [])}
-      {renderList("Async Functions", structure.async_functions || [])}
-      {renderList("Methods", structure.methods || [])}
-      {renderList("Arrow Functions", structure.arrow_functions || [])}
-      {renderList("Exports", structure.exports || [])}
-      {renderList("Interfaces", structure.interfaces || [])}
-    </div>
-  );
-};
-
 const Results = () => {
   const { state } = useLocation();
   const { result, loading, runAnalysis } = useAnalyze();
@@ -153,7 +50,6 @@ const Results = () => {
 
   const riskList = Array.isArray(result.risks) ? result.risks : [];
   const fileTree = Array.isArray(result.file_tree) ? result.file_tree : [];
-  const fileStructures = result.file_structures || {};
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -207,17 +103,6 @@ const Results = () => {
             <p className="text-gray-400">No risks detected</p>
           )}
         </div>
-      </div>
-
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">File Code Structures</h2>
-        {Object.keys(fileStructures).length > 0 ? (
-          Object.entries(fileStructures).map(([fileName, structure]) => (
-            <StructureCard key={fileName} fileName={fileName} structure={structure} />
-          ))
-        ) : (
-          <p className="text-gray-400">No file structure data available</p>
-        )}
       </div>
     </div>
   );
